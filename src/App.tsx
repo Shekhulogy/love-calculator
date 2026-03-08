@@ -169,7 +169,7 @@ const LoveCalculator = () => {
         ))}
       </div>
 
-      <style jsx>{`
+      {/* <style jsx>{`
         @keyframes float {
           0%,
           100% {
@@ -207,7 +207,7 @@ const LoveCalculator = () => {
         .animate-spin-slow {
           animation: spin-slow 2s linear infinite;
         }
-      `}</style>
+      `}</style> */}
 
       {/* Hero Section */}
       <div className="relative z-10 h-screen container mx-auto px-4 py-24 md:py-10 flex flex-col justify-between">
