@@ -169,48 +169,8 @@ const LoveCalculator = () => {
         ))}
       </div>
 
-      {/* <style jsx>{`
-        @keyframes float {
-          0%,
-          100% {
-            transform: translateY(0) rotate(0deg);
-          }
-          50% {
-            transform: translateY(-20px) rotate(10deg);
-          }
-        }
-        @keyframes pulse-ring {
-          0% {
-            transform: scale(0.95);
-            opacity: 1;
-          }
-          50% {
-            transform: scale(1.05);
-            opacity: 0.8;
-          }
-          100% {
-            transform: scale(0.95);
-            opacity: 1;
-          }
-        }
-        @keyframes spin-slow {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
-        .animate-pulse-ring {
-          animation: pulse-ring 2s ease-in-out infinite;
-        }
-        .animate-spin-slow {
-          animation: spin-slow 2s linear infinite;
-        }
-      `}</style> */}
-
       {/* Hero Section */}
-      <div className="relative z-10 h-screen container mx-auto px-4 py-24 md:py-10 flex flex-col justify-between">
+      <div className="relative z-10 h-screen container mx-auto px-4 py-6 md:py-10 flex flex-col justify-between">
         <div className="text-center">
           <div className="flex items-center justify-center mb-6">
             <Heart className="w-12 h-12 xl:w-14 xl:h-14 text-pink-500 fill-pink-500 animate-pulse" />
