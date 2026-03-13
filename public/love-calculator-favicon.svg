@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <defs>
+    <linearGradient id="g4" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#ec4899"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="500" height="500" fill="#12082a" rx="90"/>
+
+  <!-- Outer ring -->
+  <circle cx="250" cy="250" r="185" fill="none" stroke="#7c3aed" stroke-width="12"/>
+
+  <!-- Inner ring -->
+  <circle cx="250" cy="250" r="135" fill="none" stroke="#ec4899" stroke-width="8"/>
+
+  <!-- Heart in center -->
+  <path d="M250 340
+           C250 340 168 294 168 238
+           C168 210 186 194 204 194
+           C220 194 236 203 250 220
+           C264 203 280 194 296 194
+           C314 194 332 210 332 238
+           C332 294 250 340 250 340Z"
+        fill="url(#g4)"/>
+
+  <!-- Heart inner shine -->
+  <path d="M210 212 C198 222 192 238 194 252" fill="none" stroke="#fce7f3" stroke-width="7" stroke-linecap="round" opacity="0.45"/>
+
+  <!-- 4 dot accents on outer ring (top, right, bottom, left) -->
+  <circle cx="250" cy="65"  r="14" fill="#ec4899"/>
+  <circle cx="435" cy="250" r="14" fill="#a855f7"/>
+  <circle cx="250" cy="435" r="14" fill="#ec4899"/>
+  <circle cx="65"  cy="250" r="14" fill="#a855f7"/>
+</svg>

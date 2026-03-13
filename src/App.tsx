@@ -5,60 +5,141 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import emailjs from "@emailjs/browser";
 
+type FlamesResult = {
+  percentage: number;
+  category: string;
+  emoji: string;
+  message: string;
+};
+
+// Module-level — computed once, never re-runs on render
+const backgroundHearts = [...Array(20)].map((_, i) => ({
+  id: i,
+  left: `${Math.random() * 100}%`,
+  top: `${Math.random() * 100}%`,
+  width: `${Math.random() * 30 + 20}px`,
+  height: `${Math.random() * 30 + 20}px`,
+  animationDuration: `${Math.random() * 10 + 10}s`,
+  animationDelay: `${Math.random() * 5}s`,
+}));
+
 const LoveCalculator = () => {
   const [userName, setUserName] = useState("");
   const [crushName, setCrushName] = useState("");
   const [isCalculating, setIsCalculating] = useState(false);
   const [result, setResult] = useState<number | null>(null);
+  const [flamesResult, setFlamesResult] = useState<FlamesResult | null>(null);
   const [showResult, setShowResult] = useState(false);
 
-  const calculateLovePercentage = (name1: string, name2: string) => {
-    const clean1 = name1.toLowerCase().replace(/\s/g, "");
-    const clean2 = name2.toLowerCase().replace(/\s/g, "");
+  // ── Combined FLAMES + Numerology logic ──────────────────
+  const calculateLovePercentage = (
+    name1: string,
+    name2: string,
+  ): FlamesResult => {
+    const clean = (n: string) => n.toLowerCase().replace(/[^a-z]/g, "");
 
-    const vowels = ["a", "e", "i", "o", "u"];
+    const arr1 = clean(name1).split("");
+    const arr2 = clean(name2).split("");
 
-    // 1️⃣ Common letters score
-    const set1 = new Set(clean1);
-    const set2 = new Set(clean2);
-
-    let commonLetters = 0;
-    set1.forEach((char) => {
-      if (set2.has(char)) commonLetters++;
+    [...arr1].forEach((char) => {
+      const idx = arr2.indexOf(char);
+      if (idx !== -1) {
+        arr1.splice(arr1.indexOf(char), 1);
+        arr2.splice(idx, 1);
+      }
     });
 
-    const commonScore = (commonLetters / Math.max(set1.size, 1)) * 40;
+    const count = arr1.length + arr2.length || 1;
 
-    // 2️⃣ Vowel compatibility
-    const vowelCount1 = [...clean1].filter((c) => vowels.includes(c)).length;
-    const vowelCount2 = [...clean2].filter((c) => vowels.includes(c)).length;
+    const flamesList = ["F", "L", "A", "M", "E", "S"];
+    const active = [0, 1, 2, 3, 4, 5];
+    let idx = 0;
 
-    const vowelScore =
-      (Math.min(vowelCount1, vowelCount2) /
-        Math.max(vowelCount1 + vowelCount2, 1)) *
-      30;
-
-    // 3️⃣ Length similarity
-    const lengthDiff = Math.abs(clean1.length - clean2.length);
-    const lengthScore = Math.max(0, 20 - lengthDiff * 3);
-
-    // 4️⃣ Deterministic hash for randomness
-    const combined = clean1 + clean2;
-    let hash = 0;
-
-    for (let i = 0; i < combined.length; i++) {
-      hash = combined.charCodeAt(i) + ((hash << 5) - hash);
+    while (active.length > 1) {
+      idx = (idx + count - 1) % active.length;
+      active.splice(idx, 1);
+      if (idx === active.length) idx = 0;
     }
 
-    const hashScore = Math.abs(hash % 10);
+    const flamesKey = flamesList[active[0]];
 
-    let percentage = Math.round(
-      commonScore + vowelScore + lengthScore + hashScore,
-    );
+    const categories: Record<
+      string,
+      {
+        category: string;
+        emoji: string;
+        min: number;
+        max: number;
+        message: string;
+      }
+    > = {
+      F: {
+        category: "Friends",
+        emoji: "🤝",
+        min: 40,
+        max: 55,
+        message: "A powerful friendly bond between you two!",
+      },
+      L: {
+        category: "Love",
+        emoji: "❤️",
+        min: 75,
+        max: 95,
+        message: "Love is in the air! 💕",
+      },
+      A: {
+        category: "Affection",
+        emoji: "🥰",
+        min: 65,
+        max: 80,
+        message: "Deep caring and affection detected!",
+      },
+      M: {
+        category: "Marriage",
+        emoji: "💍",
+        min: 85,
+        max: 100,
+        message: "It's a match made in heaven!",
+      },
+      E: {
+        category: "Enemies",
+        emoji: "⚡",
+        min: 10,
+        max: 30,
+        message: "Opposites attract... sometimes 😅",
+      },
+      S: {
+        category: "Siblings",
+        emoji: "👫",
+        min: 30,
+        max: 45,
+        message: "You're like family to each other!",
+      },
+    };
 
-    if (percentage > 100) percentage = 100;
+    const { category, emoji, min, max, message } = categories[flamesKey];
 
-    return percentage;
+    const letterVal = (c: string) => c.charCodeAt(0) - 96;
+    const sumName = (name: string) =>
+      clean(name)
+        .split("")
+        .reduce((s, c) => s + letterVal(c), 0);
+    const reduceToSingle = (n: number): number => {
+      while (n > 9)
+        n = String(n)
+          .split("")
+          .reduce((s, d) => s + +d, 0);
+      return n;
+    };
+
+    const ln1 = reduceToSingle(sumName(name1));
+    const ln2 = reduceToSingle(sumName(name2));
+
+    const range = max - min;
+    const nudge = (ln1 * 7 + ln2 * 13) % (range + 1);
+    const percentage = Math.min(100, Math.max(0, min + nudge));
+
+    return { percentage, category, emoji, message };
   };
 
   const calculateLove = () => {
@@ -67,20 +148,20 @@ const LoveCalculator = () => {
     setIsCalculating(true);
     setShowResult(false);
     setResult(null);
+    setFlamesResult(null);
 
     setTimeout(() => {
-      const lovePercentage = calculateLovePercentage(userName, crushName);
-      setResult(lovePercentage);
-      sendEmail(lovePercentage);
+      const flames = calculateLovePercentage(userName, crushName);
+      setResult(flames.percentage);
+      setFlamesResult(flames);
+      sendEmail(flames.percentage, flames.category);
       setIsCalculating(false);
 
-      setTimeout(() => {
-        setShowResult(true);
-      }, 100);
+      setTimeout(() => setShowResult(true), 100);
     }, 3000);
   };
 
-  const sendEmail = (percentage: number) => {
+  const sendEmail = (percentage: number, category: string) => {
     emailjs
       .send(
         "service_6amm5kn",
@@ -92,18 +173,13 @@ const LoveCalculator = () => {
           user_name: userName,
           crush_name: crushName,
           percentage: percentage,
+          category: category,
         },
-        {
-          publicKey: "NH0Q0XB7-2px41eZI",
-        },
+        { publicKey: "NH0Q0XB7-2px41eZI" },
       )
       .then(
-        () => {
-          console.log("SUCCESS!");
-        },
-        (error) => {
-          console.log("FAILED...", error.text);
-        },
+        () => console.log("SUCCESS!"),
+        (error) => console.log("FAILED...", error.text),
       );
   };
 
@@ -111,30 +187,9 @@ const LoveCalculator = () => {
     setUserName("");
     setCrushName("");
     setResult(null);
+    setFlamesResult(null);
     setShowResult(false);
     setIsCalculating(false);
-  };
-
-  const roastMessages = [
-    "Even WiFi signals are stronger than this connection 😅",
-    "Maybe try again with another name... just saying 👀",
-    "Friendzone detected! 🚨",
-    "The universe suggests focusing on self-love for now ❤️",
-    "This match might need a software update 🔧",
-    "Love score loading... oh wait, it's buffering forever 😬",
-  ];
-
-  const getRoastMessage = () => {
-    const randomIndex = Math.floor(Math.random() * roastMessages.length);
-    return roastMessages[randomIndex];
-  };
-
-  const getResultMessage = (percentage: number) => {
-    if (percentage >= 90) return "It's a match made in heaven! ";
-    if (percentage >= 70) return "Strong connection detected! ";
-    if (percentage >= 50) return "There's definitely potential! ";
-    if (percentage >= 30) return "Friendship vibes are strong! ";
-    return getRoastMessage();
   };
 
   const getResultColor = (percentage: number) => {
@@ -150,196 +205,222 @@ const LoveCalculator = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-950 to-pink-950">
-      {/* Animated Background Hearts */}
+    // min-h-screen on mobile (allow scroll), h-screen on md+ (lock to viewport)
+    <div className="min-h-screen md:h-screen md:overflow-hidden bg-gradient-to-br from-gray-900 via-purple-950 to-pink-950">
+      {/* Background hearts */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
+        {backgroundHearts.map((heart) => (
           <Heart
-            key={i}
+            key={heart.id}
             className="absolute text-pink-900 opacity-20"
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              width: `${Math.random() * 30 + 20}px`,
-              height: `${Math.random() * 30 + 20}px`,
-              animation: `float ${Math.random() * 10 + 10}s ease-in-out infinite`,
-              animationDelay: `${Math.random() * 5}s`,
+              left: heart.left,
+              top: heart.top,
+              width: heart.width,
+              height: heart.height,
+              animation: `float ${heart.animationDuration} ease-in-out infinite`,
+              animationDelay: heart.animationDelay,
             }}
           />
         ))}
       </div>
 
-      {/* Hero Section */}
-      <div className="relative z-10 h-screen container mx-auto px-4 py-6 md:py-10 flex flex-col justify-between">
-        <div className="text-center">
-          <div className="flex items-center justify-center mb-6">
-            <Heart className="w-12 h-12 xl:w-14 xl:h-14 text-pink-500 fill-pink-500 animate-pulse" />
-            <Sparkles className="w-8 h-8 xl:w-10 xl:h-10 text-purple-500 ml-2" />
+      {/* Inner flex column fills full height on md+ */}
+      <div className="relative z-10 flex flex-col min-h-screen md:h-screen">
+        {/* ── Header — compact on md+ to save vertical space ── */}
+        <header className="text-center px-4 pt-6 pb-3 sm:pt-8 sm:pb-4 md:pt-5 md:pb-2 lg:pt-8 lg:pb-4 shrink-0">
+          <div className="flex items-center justify-center mb-2 sm:mb-3 md:mb-2">
+            <Heart className="w-8 h-8 sm:w-10 sm:h-10 md:w-10 md:h-10 lg:w-12 lg:h-12 text-pink-500 fill-pink-500 animate-pulse" />
+            <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 md:w-7 md:h-7 lg:w-8 lg:h-8 text-purple-500 ml-2" />
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent mb-4">
+          <h1 className="text-3xl sm:text-4xl md:text-4xl lg:text-5xl xl:text-6xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent mb-1 sm:mb-2">
             Love Calculator
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base md:text-sm lg:text-base text-muted-foreground max-w-xs sm:max-w-md md:max-w-2xl mx-auto">
             Discover the magical connection between two hearts
           </p>
-        </div>
+        </header>
 
-        {/* Main Calculator Card */}
-        <Card className="w-full max-w-2xl mx-auto p-6 md:p-10 bg-background/80 backdrop-blur-sm border-2 shadow-2xl justify-center">
-          {!result && !isCalculating ? (
-            <div className="space-y-6">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                    <Heart className="w-4 h-4 text-pink-500" />
-                    Your Name
-                  </label>
-                  <Input
-                    type="text"
-                    placeholder="Enter your name..."
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
-                    className="text-lg h-12 border-2 focus:border-pink-500"
-                  />
-                </div>
+        {/* ── Card — flex-1 so it fills remaining height, centered ── */}
+        <main className="flex-1 flex items-center justify-center px-4 py-2 sm:py-4 md:py-2 overflow-hidden">
+          <Card className="w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl mx-auto p-4 sm:p-6 md:p-6 lg:p-8 xl:p-10 bg-background/80 backdrop-blur-sm border-2 shadow-2xl">
+            {/* ── Input form ── */}
+            {!result && !isCalculating && (
+              <div className="space-y-4 sm:space-y-6">
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <label className="text-xs sm:text-sm font-medium text-foreground flex items-center gap-2">
+                      <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-pink-500" />
+                      Your Name
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="Enter your name..."
+                      value={userName}
+                      onChange={(e) => setUserName(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && calculateLove()}
+                      className="text-base sm:text-lg h-11 sm:h-12 border-2 focus:border-pink-500"
+                    />
+                  </div>
 
-                <div className="flex items-center justify-center py-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-12 h-0.5 bg-gradient-to-r from-transparent to-pink-300"></div>
-                    <Heart className="w-6 h-6 text-pink-500 fill-pink-500" />
-                    <div className="w-12 h-0.5 bg-gradient-to-l from-transparent to-pink-300"></div>
+                  <div className="flex items-center justify-center py-1">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 sm:w-12 h-0.5 bg-gradient-to-r from-transparent to-pink-300" />
+                      <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-pink-500 fill-pink-500" />
+                      <div className="w-8 sm:w-12 h-0.5 bg-gradient-to-l from-transparent to-pink-300" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <label className="text-xs sm:text-sm font-medium text-foreground flex items-center gap-2">
+                      <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-500" />
+                      Your Crush's Name
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="Enter their name..."
+                      value={crushName}
+                      onChange={(e) => setCrushName(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && calculateLove()}
+                      className="text-base sm:text-lg h-11 sm:h-12 border-2 focus:border-purple-500"
+                    />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                    <Heart className="w-4 h-4 text-purple-500" />
-                    Your Crush's Name
-                  </label>
-                  <Input
-                    type="text"
-                    placeholder="Enter their name..."
-                    value={crushName}
-                    onChange={(e) => setCrushName(e.target.value)}
-                    className="text-lg h-12 border-2 focus:border-purple-500"
-                  />
+                <Button
+                  onClick={calculateLove}
+                  disabled={!userName.trim() || !crushName.trim()}
+                  className="w-full h-12 sm:h-14 text-base sm:text-lg font-semibold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 text-white shadow-lg"
+                >
+                  <Calculator className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                  Calculate Love Match
+                </Button>
+              </div>
+            )}
+
+            {/* ── Loading spinner ── */}
+            {isCalculating && (
+              <div className="py-8 sm:py-12 flex flex-col items-center justify-center space-y-4 sm:space-y-6">
+                <div className="relative">
+                  <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-8 border-pink-900" />
+                  <div className="absolute inset-0 w-24 h-24 sm:w-32 sm:h-32 rounded-full border-8 border-t-pink-500 border-r-purple-500 border-b-blue-500 border-l-transparent animate-spin-slow" />
+                  <Heart className="absolute inset-0 m-auto w-9 h-9 sm:w-12 sm:h-12 text-pink-500 fill-pink-500 animate-pulse" />
+                </div>
+                <div className="text-center space-y-1 sm:space-y-2">
+                  <p className="text-lg sm:text-xl font-semibold text-foreground">
+                    Calculating...
+                  </p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Analyzing cosmic compatibility
+                  </p>
                 </div>
               </div>
+            )}
 
-              <Button
-                onClick={calculateLove}
-                disabled={!userName.trim() || !crushName.trim()}
-                className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 text-white shadow-lg"
-              >
-                <Calculator className="w-5 h-5 mr-2" />
-                Calculate Love Match
-              </Button>
-            </div>
-          ) : isCalculating ? (
-            <div className="py-12 flex flex-col items-center justify-center space-y-6">
-              <div className="relative">
-                <div className="w-32 h-32 rounded-full border-8 border-pink-900"></div>
-                <div className="absolute inset-0 w-32 h-32 rounded-full border-8 border-t-pink-500 border-r-purple-500 border-b-blue-500 border-l-transparent animate-spin-slow"></div>
-                <Heart className="absolute inset-0 m-auto w-12 h-12 text-pink-500 fill-pink-500 animate-pulse" />
-              </div>
-              <div className="text-center space-y-2">
-                <p className="text-xl font-semibold text-foreground">
-                  Calculating...
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Analyzing cosmic compatibility
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="py-4 flex flex-col items-center justify-center space-y-4">
-              <div className="text-center">
-                <p className="text-lg text-muted-foreground">
+            {/* ── Result ── */}
+            {result !== null && !isCalculating && (
+              <div className="py-1 sm:py-2 flex flex-col items-center justify-center space-y-2 sm:space-y-3 md:space-y-2 lg:space-y-3">
+                {/* Names */}
+                <p className="text-sm sm:text-base text-muted-foreground text-center">
                   {capitalizeName(userName)}{" "}
-                  <Heart className="inline w-4 h-4 text-pink-500 fill-pink-500" />{" "}
+                  <Heart className="inline w-3.5 h-3.5 sm:w-4 sm:h-4 text-pink-500 fill-pink-500" />{" "}
                   {capitalizeName(crushName)}
                 </p>
-              </div>
 
-              {/* Result Ring */}
-              <div
-                className={`relative ${showResult ? "animate-pulse-ring" : ""}`}
-              >
-                <svg className="w-55 h-55 transform -rotate-90">
-                  {/* Background Circle */}
-                  <circle
-                    cx="110"
-                    cy="110"
-                    r="90"
-                    stroke="currentColor"
-                    strokeWidth="16"
-                    fill="none"
-                    className="text-gray-700"
-                  />
-                  {/* Progress Circle */}
-                  <circle
-                    cx="110"
-                    cy="110"
-                    r="90"
-                    stroke="url(#gradient)"
-                    strokeWidth="16"
-                    fill="none"
-                    strokeLinecap="round"
-                    strokeDasharray={`${2 * Math.PI * 90}`}
-                    strokeDashoffset={
-                      showResult
-                        ? `${2 * Math.PI * 90 * (1 - (result || 0) / 100)}`
-                        : `${2 * Math.PI * 90}`
-                    }
-                    className="transition-all duration-2000 ease-out"
-                  />
-                  <defs>
-                    <linearGradient
-                      id="gradient"
-                      x1="0%"
-                      y1="0%"
-                      x2="100%"
-                      y2="100%"
-                    >
-                      <stop offset="0%" stopColor="#ec4899" />
-                      <stop offset="50%" stopColor="#a855f7" />
-                      <stop offset="100%" stopColor="#3b82f6" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span
-                    className={`text-4xl font-bold ${getResultColor(result || 0)}`}
+                {/* FLAMES badge */}
+                {flamesResult && showResult && (
+                  <div className="text-center animate-pulse flex items-center">
+                    <span className="text-2xl sm:text-3xl md:text-3xl">
+                      {flamesResult.emoji}
+                    </span>
+                    <p className="text-lg sm:text-xl md:text-xl lg:text-2xl font-bold text-pink-500 mt-0.5">
+                      {flamesResult.category}
+                    </p>
+                  </div>
+                )}
+
+                {/* Result Ring — smaller on md to prevent scroll */}
+                <div
+                  className={`relative w-36 h-36 sm:w-44 sm:h-44 md:w-40 md:h-40 lg:w-52 lg:h-52 xl:w-56 xl:h-56 ${showResult ? "animate-pulse-ring" : ""}`}
+                >
+                  <svg
+                    viewBox="0 0 224 224"
+                    className="w-full h-full transform -rotate-90"
                   >
-                    {showResult ? result : 0}%
-                  </span>
-                  <Heart
-                    className={`w-8 h-8 mt-2 ${getResultColor(result || 0)} fill-current`}
-                  />
+                    <circle
+                      cx="112"
+                      cy="112"
+                      r="90"
+                      stroke="currentColor"
+                      strokeWidth="16"
+                      fill="none"
+                      className="text-gray-700"
+                    />
+                    <circle
+                      cx="112"
+                      cy="112"
+                      r="90"
+                      stroke="url(#gradient)"
+                      strokeWidth="16"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeDasharray={`${2 * Math.PI * 90}`}
+                      strokeDashoffset={
+                        showResult
+                          ? `${2 * Math.PI * 90 * (1 - (result || 0) / 100)}`
+                          : `${2 * Math.PI * 90}`
+                      }
+                      style={{ transitionDuration: "2000ms" }}
+                      className="transition-all ease-out"
+                    />
+                    <defs>
+                      <linearGradient
+                        id="gradient"
+                        x1="0%"
+                        y1="0%"
+                        x2="100%"
+                        y2="100%"
+                      >
+                        <stop offset="0%" stopColor="#ec4899" />
+                        <stop offset="50%" stopColor="#a855f7" />
+                        <stop offset="100%" stopColor="#3b82f6" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span
+                      className={`text-2xl sm:text-3xl md:text-3xl lg:text-4xl font-bold ${getResultColor(result || 0)}`}
+                    >
+                      {showResult ? result : 0}%
+                    </span>
+                    <Heart
+                      className={`w-5 h-5 sm:w-6 sm:h-6 md:w-6 md:h-6 lg:w-8 lg:h-8 mt-1 ${getResultColor(result || 0)} fill-current`}
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div className="text-center space-y-4">
-                <p className="text-xl font-semibold text-foreground">
-                  {getResultMessage(result || 0)}
+                {/* Message */}
+                <p className="text-sm sm:text-base md:text-base lg:text-lg font-semibold text-foreground text-center px-2">
+                  {flamesResult?.message}
                 </p>
+
                 <Button
                   onClick={reset}
                   variant="outline"
-                  className="border-2 hover:bg-pink-950"
+                  className="border-2 hover:bg-pink-950 text-sm sm:text-base px-6 sm:px-8"
                 >
                   Try Again
                 </Button>
               </div>
-            </div>
-          )}
-        </Card>
+            )}
+          </Card>
+        </main>
 
-        {/* Footer */}
-        <div className="text-center text-sm text-muted-foreground">
-          <p> For entertainment purposes only </p>
-          <p className="mt-2">Made with love and a sprinkle of magic </p>
-        </div>
+        {/* ── Footer ── */}
+        <footer className="text-center text-xs sm:text-sm text-muted-foreground px-4 py-3 sm:py-4 shrink-0">
+          <p>For entertainment purposes only</p>
+          <p className="mt-1">Made with love and a sprinkle of magic</p>
+        </footer>
       </div>
     </div>
   );
